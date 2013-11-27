@@ -1,7 +1,7 @@
 import sys
 import logging
 import ConfigParser
-from git import *
+from git.repo import Repo
 
 try:
     NullHandler = logging.NullHandler
