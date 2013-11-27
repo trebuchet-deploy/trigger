@@ -10,7 +10,7 @@ class SyncDriver(Driver):
         raise NotImplementedError
 
 
-class LockDriver(Driver):
+class FileDriver(Driver):
 
     def add_lock(self):
         raise NotImplementedError
