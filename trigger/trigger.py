@@ -20,60 +20,75 @@ class TriggerError(Exception):
 class Trigger(object):
 
     def __init__(self, args):
-        self.args = args
-        self.file_driver = CONF.drivers['file_driver']
-        self.sync_driver = CONF.drivers['sync_driver']
-        self.repo = Repo(".")
+        self._args = args
+        self._file_driver = CONF.drivers['file_driver']
+        self._sync_driver = CONF.drivers['sync_driver']
+        self._repo = Repo(".")
 
     def start(self):
-        if self.file_driver.check_lock():
+        if self._file_driver.check_lock():
             message = 'A deployment has already been started for this repo.'
             raise TriggerError(message, 100)
         try:
-            self.file_driver.add_lock()
+            self._file_driver.add_lock()
         except FileDriverError as e:
             raise TriggerError(e.message, 101)
         try:
             self._write_tag('start')
         except TriggerError as e:
             LOG.error(e.message)
-            self.abort()
+            self.abort(reset=False)
         LOG.info('Deployment started.')
 
-    def abort(self):
-        if not self.file_driver.check_lock():
+    def abort(self, reset=True):
+        if not self._file_driver.check_lock():
             message = 'There is no deployment to abort.'
             raise TriggerError(message, 130)
+        if reset:
+            try:
+                start_tag = self._get_latest_tag('start')
+                self._repo.reset(commit=start_tag.commit, index=True,
+                                 working_tree=True)
+            except GitCommandError:
+                LOG.error('Failed to reset to the start tag.')
+                pass
         try:
-            self.file_driver.remove_lock()
+            self._file_driver.remove_lock()
         except FileDriverError as e:
             raise TriggerError(e.message, 131)
         LOG.info('Deployment aborted.')
 
     def sync(self):
-        if not self.file_driver.check_lock():
+        if not self._file_driver.check_lock():
             message = 'A deployment has not been started.'
             raise TriggerError(message, 160)
-        if self.repo.is_dirty():
+        if self._repo.is_dirty():
             message = ('The repository is dirty. Please commit or revert any'
                        ' uncommitted changes.')
             raise TriggerError(message, 161)
         tag = self._write_tag('sync')
         try:
-            self.file_driver.write_deploy_file(tag)
+            self._file_driver.write_deploy_file(tag)
         except FileDriverError as e:
             raise TriggerError(e.message, 162)
         try:
-            self.sync_driver.sync(tag)
+            self._sync_driver.sync(tag)
         except SyncDriverError as e:
             raise TriggerError(e.message, 163)
 
     def _write_tag(self, tag_type):
+        #TODO: use a tag driver
         timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
         try:
-            self.repo.create_tag('{0}-{1}-{2}'.format(CONF.config['repo_name'],
-                                                      tag_type,
-                                                      timestamp))
+            tag_format = '{0}-{1}-{2}'.format(CONF.config['repo_name'],
+                                              tag_type,
+                                              timestamp)
+            return self._repo.create_tag(tag_format)
         except GitCommandError:
             message = 'Failed to write the {0} tag.'.format(tag_type)
             raise TriggerError(message, 190)
+
+    def _get_latest_tag(tag_type):
+        tag_filter = '-{0}-'.format(tag_type)
+        tags = filter(lambda k: tag_filter in k.name, self._repo.tags)
+        return tags[-1]
