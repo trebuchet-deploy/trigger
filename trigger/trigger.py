@@ -1,10 +1,10 @@
 import sys
-import trebuchet.trigger.config
-from trebuchet.trigger.drivers import FileManagerError, SyncManagerError
+import config
+from driver import FileDriverError, SyncDriverError
 from git.repo import Repo
 
-CONF = trigger.config.CONF
-LOG = trigger.config.LOG
+CONF = config.CONF
+LOG = config.LOG
 
 
 class TriggerError(Exception):
@@ -21,8 +21,8 @@ class Trigger(object):
 
     def __init__(self, args):
         self._args = args
-        self._file_driver = CONF.drivers['file_driver']
-        self._sync_driver = CONF.drivers['sync_driver']
+        self._file_driver = CONF.drivers['file-driver']
+        self._sync_driver = CONF.drivers['sync-driver']
         self._repo = Repo(".")
 
     def start(self):
@@ -80,7 +80,7 @@ class Trigger(object):
         #TODO: use a tag driver
         timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
         try:
-            tag_format = '{0}-{1}-{2}'.format(CONF.config['repo_name'],
+            tag_format = '{0}-{1}-{2}'.format(CONF.config['repo-name'],
                                               tag_type,
                                               timestamp)
             return self._repo.create_tag(tag_format)

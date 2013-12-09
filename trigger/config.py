@@ -14,6 +14,16 @@ logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
 
 
+class ConfigurationError(Exception):
+
+    def __init__(self, message, errorno):
+        self.message = message
+        self.errorno = errorno
+
+    def __str__(self):
+        return message
+
+
 class Configuration(object):
 
     config = {}
@@ -27,7 +37,7 @@ class Configuration(object):
             LOG.error('Not in a git repository')
             sys.exit(1)
         config = {
-            'repo_name': ('deploy', 'repo_name', None),
+            'repo-name': ('deploy', 'repo-name', None),
             'user.name': ('user', 'name', None),
             'user.email': ('user', 'email', None),
         }
@@ -35,9 +45,9 @@ class Configuration(object):
 
     def _register_drivers(self):
         driver_config = {
-            'sync_driver': ('deploy', 'sync_driver',
+            'sync-driver': ('deploy', 'sync-driver',
                             'trebuchet.local.SyncManager'),
-            'file_driver': ('deploy', 'file_driver',
+            'file-driver': ('deploy', 'file-driver',
                             'trebuchet.local.FileManager'),
         }
         self._register_config(driver_config)
@@ -53,21 +63,22 @@ class Configuration(object):
             except (ValueError, AttributeError):
                 # TODO: set an error condition and exit after all
                 # config has been parsed
-                LOG.error('Failed to import driver: {0}'.format(mod))
-                sys.exit(2)
+                msg = 'Failed to import driver: {0}'.format(mod)
+                LOG.error(msg)
+                raise ConfigurationError(msg, 1)
 
     def _register_config(self, config):
         for key, val in config.items():
             try:
                 self.config[key] = self.repo_config.get_value(val[0], val[1])
-            except ConfigParser.NoOptionError:
+            except (ConfigParser.NoOptionError, ConfigParser.NoSectionError):
                 if val[2]:
                     self.config[key] = val[2]
                 else:
                     msg = ('Missing the following configuration item in the'
-                           ' git config: {0}.{1}').format(val[1], val[2])
+                           ' git config: {0}.{1}').format(val[0], val[1])
                     LOG.error(msg)
-                    sys.exit(2)
+                    raise ConfigurationError(msg, 2)
 
     def register_cli_options(self, options):
         raise NotImplementedError

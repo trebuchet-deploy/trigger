@@ -1,9 +1,8 @@
-import trebuchet.trigger.config
-from trebuchet.trigger.drivers.driver import SyncDriver, FileDriver
-from git import *
+import trigger.config as config
+from trigger.driver import SyncDriver, FileDriver
 
-CONF = trigger.config.CONF
-LOG = trigger.config.LOG
+CONF = config.CONF
+LOG = config.LOG
 
 
 class SyncDriver(SyncDriver):
