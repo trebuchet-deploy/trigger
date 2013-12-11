@@ -11,3 +11,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+class Extension(object):
+    """Extension descriptor."""
+
+    def __init__(self, name, module):
+        self.name = name
+        self.module = module

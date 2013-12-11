@@ -1,3 +1,16 @@
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+
 import sys
 import logging
 import ConfigParser
@@ -43,26 +56,28 @@ class Configuration(object):
         }
         self._register_config(config)
 
-    def _register_drivers(self):
+    def register_drivers(self):
         driver_config = {
             'sync-driver': ('deploy', 'sync-driver',
-                            'trebuchet.local.SyncManager'),
+                            'trebuchet.local.SyncDriver'),
             'file-driver': ('deploy', 'file-driver',
-                            'trebuchet.local.FileManager'),
+                            'trebuchet.local.FileDriver'),
         }
         self._register_config(driver_config)
         for driver in driver_config:
-            driver = self.config[driver]
-            mod, _, cls = driver.rpartition('.')
-            mod = 'driver.' + mod
+            LOG.debug('Getting config for driver: {}'.format(driver))
+            driver_config = self.config[driver]
+            mod, _, cls = driver_config.rpartition('.')
+            mod = 'trigger.drivers.' + mod
             try:
+                LOG.debug('Importing {}'.format(mod))
                 __import__(mod)
                 driver_class = getattr(sys.modules[mod], cls)
-                self.drivers[key] = driver_class()
-                self._register_config(self.drivers[key].get_config())
+                self.drivers[driver] = driver_class()
+                self._register_config(self.drivers[driver].get_config())
             except (ValueError, AttributeError):
-                # TODO: set an error condition and exit after all
-                # config has been parsed
+                # TODO (ryan-lane): set an error condition and exit after all
+                #                   config has been parsed
                 msg = 'Failed to import driver: {0}'.format(mod)
                 LOG.error(msg)
                 raise ConfigurationError(msg, 1)
