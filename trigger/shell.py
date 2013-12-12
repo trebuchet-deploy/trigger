@@ -24,6 +24,8 @@ from trigger import utils
 from trigger import config
 from trigger import extension
 from trigger.driver import FileDriverError, SyncDriverError
+from datetime import datetime
+from git import GitCommandError
 from git.repo import Repo
 
 CONF = config.CONF
@@ -34,11 +36,11 @@ LOG = config.LOG
 class TriggerError(Exception):
 
     def __init__(self, message, errorno):
-        self.message = message
+        Exception.__init__(self, message)
         self.errorno = errorno
 
     def __str__(self):
-        return message
+        return self.message
 
 
 class Trigger(object):
@@ -49,34 +51,39 @@ class Trigger(object):
         self._repo = Repo(".")
 
     def do_start(self, args):
-        if self._file_driver.check_lock():
+        if self._file_driver.check_lock(args):
             message = 'A deployment has already been started for this repo.'
             raise TriggerError(message, 100)
         try:
-            self._file_driver.add_lock()
+            self._file_driver.add_lock(args)
         except FileDriverError as e:
-            raise TriggerError(e.message, 101)
+            LOG.error(e.message)
+            raise TriggerError('Failed to start deployment', 101)
         try:
             self._write_tag('start')
+            # TODO (ryan-lane): Add logging call here
         except TriggerError as e:
             LOG.error(e.message)
             self.abort(args, reset=False)
         LOG.info('Deployment started.')
 
     def do_abort(self, args, reset=True):
-        if not self._file_driver.check_lock():
+        if not self._file_driver.check_lock(args):
             message = 'There is no deployment to abort.'
             raise TriggerError(message, 130)
         if reset:
             try:
                 start_tag = self._get_latest_tag('start')
-                self._repo.reset(commit=start_tag.commit, index=True,
-                                 working_tree=True)
+                if start_tag:
+                    self._repo.reset(commit=start_tag.commit, index=True,
+                                     working_tree=True)
+                else:
+                    LOG.warning('Could not find a start tag to reset to.')
             except GitCommandError:
                 LOG.error('Failed to reset to the start tag.')
                 pass
         try:
-            self._file_driver.remove_lock()
+            self._file_driver.remove_lock(args)
         except FileDriverError as e:
             raise TriggerError(e.message, 131)
         LOG.info('Deployment aborted.')
@@ -91,11 +98,8 @@ class Trigger(object):
             raise TriggerError(message, 161)
         tag = self._write_tag('sync')
         try:
-            self._file_driver.write_deploy_file(tag)
-        except FileDriverError as e:
-            raise TriggerError(e.message, 162)
-        try:
-            self._sync_driver.sync(tag)
+            # TODO (ryan-lane): Add logging call here
+            self._sync_driver.sync(tag, args)
         except SyncDriverError as e:
             raise TriggerError(e.message, 163)
 
@@ -111,11 +115,13 @@ class Trigger(object):
             message = 'Failed to write the {0} tag.'.format(tag_type)
             raise TriggerError(message, 190)
 
-    def _get_latest_tag(tag_type):
+    def _get_latest_tag(self, tag_type):
         tag_filter = '-{0}-'.format(tag_type)
         tags = filter(lambda k: tag_filter in k.name, self._repo.tags)
-        return tags[-1]
-
+        if len(tags) > 0:
+            return tags[-1]
+        else:
+            return None
 
     @utils.arg('command', metavar='<subcommand>', nargs='?',
                     help='Display help for <subcommand>')
@@ -211,8 +217,12 @@ class Trigger(object):
             self.do_help(args)
             return 0
 
-        args.func(args)
-        
+        try:
+            args.func(args)
+        except TriggerError as e:
+            LOG.error(e.message)
+            raise SystemExit(e.errorno)
+
 
 if __name__ == "__main__":
     trigger = Trigger()

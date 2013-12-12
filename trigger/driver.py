@@ -19,8 +19,9 @@ class Driver(object):
 
 class SyncDriverError(Exception):
 
-    def __init__(self, message):
+    def __init__(self, message, errorno):
         Exception.__init__(self, message)
+        self.errorno = errorno
 
     def __str__(self):
         return self.message
@@ -34,8 +35,9 @@ class SyncDriver(Driver):
 
 class FileDriverError(Exception):
 
-    def __init__(self, message):
+    def __init__(self, message, errorno):
         Exception.__init__(self, message)
+        self.errorno = errorno
 
     def __str__(self):
         return self.message
@@ -43,14 +45,11 @@ class FileDriverError(Exception):
 
 class FileDriver(Driver):
 
-    def check_lock(self):
+    def check_lock(self, args):
         raise NotImplementedError
 
-    def add_lock(self):
+    def add_lock(self, args):
         raise NotImplementedError
 
-    def remove_lock(self):
-        raise NotImplementedError
-
-    def write_deploy_file(self, tag):
+    def remove_lock(self, args):
         raise NotImplementedError
