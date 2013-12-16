@@ -90,7 +90,7 @@ To abort a deployment:
 INFO:Deployment aborted.
 ```
 
-To manage services:
+To manage services (upcoming in version 0.3):
 
 ```bash
 <repo>$ git trigger service start
