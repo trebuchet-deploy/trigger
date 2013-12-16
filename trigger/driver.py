@@ -53,3 +53,28 @@ class LockDriver(Driver):
 
     def remove_lock(self, args):
         raise NotImplementedError
+
+
+class ServiceDriverError(Exception):
+
+    def __init__(self, message, errorno):
+        Exception.__init__(self, message)
+        self.errorno = errorno
+
+    def __str__(self):
+        return self.message
+
+
+class ServiceDriver(Driver):
+
+    def stop(self, args):
+        raise NotImplementedError
+
+    def start(self, args):
+        raise NotImplementedError
+
+    def restart(self, args):
+        raise NotImplementedError
+
+    def reload(self, args):
+        raise NotImplementedError

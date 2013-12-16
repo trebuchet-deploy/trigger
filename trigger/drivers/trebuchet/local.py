@@ -15,16 +15,18 @@ import os
 import json
 import subprocess
 import trigger.config as config
+import trigger.driver as driver
 
 from datetime import datetime
-from trigger.driver import SyncDriver, SyncDriverError
-from trigger.driver import LockDriver, LockDriverError
+from driver import SyncDriverError
+from driver import LockDriverError
+from driver import ServiceDriverError
 
 CONF = config.CONF
 LOG = config.LOG
 
 
-class SyncDriver(SyncDriver):
+class SyncDriver(driver.SyncDriver):
 
     def __init__(self):
         self._deploy_dir = os.path.join(CONF.repo.working_dir, '.git/deploy')
@@ -133,7 +135,7 @@ class SyncDriver(SyncDriver):
             raise SyncDriverError('Error during checkout phase', 3)
 
 
-class LockDriver(LockDriver):
+class LockDriver(driver.LockDriver):
 
     def __init__(self):
         self._deploy_dir = os.path.join(CONF.repo.working_dir, '.git/deploy')
@@ -162,3 +164,18 @@ class LockDriver(LockDriver):
 
     def check_lock(self, args):
         return os.path.isfile(self._lock_file)
+
+
+class ServiceDriver(driver.ServiceDriver):
+
+    def stop(self, args):
+        raise NotImplementedError
+
+    def start(self, args):
+        raise NotImplementedError
+
+    def restart(self, args):
+        raise NotImplementedError
+
+    def reload(self, args):
+        raise NotImplementedError

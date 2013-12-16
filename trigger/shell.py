@@ -24,7 +24,9 @@ import argparse
 from trigger import utils
 from trigger import config
 from trigger import extension
-from trigger.driver import LockDriverError, SyncDriverError
+from trigger.driver import LockDriverError
+from trigger.driver import SyncDriverError
+from trigger.driver import ServiceDriverError
 from datetime import datetime
 from git import GitCommandError
 from git.repo import Repo
@@ -49,6 +51,7 @@ class Trigger(object):
     def __init__(self):
         self._lock_driver = CONF.drivers['lock-driver']
         self._sync_driver = CONF.drivers['sync-driver']
+        self._service_driver = CONF.drivers['service-driver']
 
     def do_start(self, args):
         if self._lock_driver.check_lock(args):
@@ -133,8 +136,26 @@ class Trigger(object):
         else:
             return None
 
+    @utils.arg('action',
+               metavar='<action>',
+               help='Service action to take: stop|start|restart|reload')
+    @utils.arg('--batch',
+               dest='batch',
+               help='Number or percentage of targets to target for'
+                    ' batch processing.')
+    def do_service(self, args):
+        """
+        Manage the service associated with this repository.
+        """
+        try:
+            getattr(self.service_driver, args.action)(args)
+        except AttributeError, NotImplementedError:
+            msg = '{0} is not an action implemented by this service driver.'
+            msg = msg.format(args.action)
+            raise TriggerError(msg, 200)
+
     @utils.arg('command', metavar='<subcommand>', nargs='?',
-                    help='Display help for <subcommand>')
+               help='Display help for <subcommand>.')
     def do_help(self, args):
         """
         Display help about this program or one of its subcommands.

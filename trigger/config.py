@@ -62,6 +62,8 @@ class Configuration(object):
                             'trebuchet.local.SyncDriver'),
             'lock-driver': ('deploy', 'lock-driver',
                             'trebuchet.local.LockDriver'),
+            'service-driver': ('deploy', 'service-driver',
+                               'trebuchet.local.ServiceDriver'),
         }
         self._register_config(driver_config)
         for driver in driver_config:
