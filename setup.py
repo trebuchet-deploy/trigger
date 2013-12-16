@@ -17,7 +17,7 @@ setup(
     name = "TrebuchetTrigger",
     version = "0.1",
     packages = find_packages(),
-    install_requires = ['GitPython>=0.3.2'],
+    install_requires = ['GitPython>=0.3.2.RC1'],
 
     author="Ryan Lane",
     author_email="ryan@ryandlane.com",
