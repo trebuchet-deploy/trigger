@@ -99,7 +99,7 @@ class Trigger(object):
         LOG.info('Deployment aborted.')
 
     def do_sync(self, args):
-        if not self._lock_driver.check_lock():
+        if not self._lock_driver.check_lock(args):
             message = 'A deployment has not been started.'
             raise TriggerError(message, 160)
         if CONF.repo.is_dirty():

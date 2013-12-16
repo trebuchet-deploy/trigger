@@ -13,10 +13,10 @@
 
 import os
 import json
-import datetime
 import subprocess
 import trigger.config as config
 
+from datetime import datetime
 from trigger.driver import SyncDriver, SyncDriverError
 from trigger.driver import LockDriver, LockDriverError
 
