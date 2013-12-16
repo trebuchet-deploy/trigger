@@ -140,18 +140,23 @@ Extensions are able to extend the command line to add extra actions. Extensions 
 
 Example extension:
 
-    class DogExtension(Extension):
-  
-        @utils.arg('--big',
-                   dest='big',
-                   action='store_true',
-                   default=False,
-                   help='Make big dog sounds rather than small dog sounds.')
-        def do_bark(self, args):
-            if args.big:
-                LOG.info('WOOF')
-            else:
-                LOG.info('woof')
+    from trigger import config
+    from trigger import utils
+    from trigger.extension import Extension
+
+    LOG = config.LOG
+
+
+    @utils.arg('--big',
+               dest='big',
+               action='store_true',
+               default=False,
+               help='Make big dog sounds rather than small dog sounds.')
+    def do_bark( args):
+        if args.big:
+            LOG.info('WOOF')
+        else:
+            LOG.info('woof')
 
 Example usage:
 
