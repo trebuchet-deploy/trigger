@@ -136,7 +136,7 @@ Configured using:
 
 ### Extensions ###
 
-Extensions are able to extend the command line to add extra actions. Extensions are installed in extensions/<extension>.py. Functions beginning with do\_ are turned into cli actions. Decorators can be used to extend argparse for this action.
+Extensions are able to extend the command line to add extra actions. Extensions are installed in extensions/\<extension\>.py. Functions beginning with do\_ are turned into cli actions. Decorators can be used to extend argparse for this action.
 
 Example extension:
 
