@@ -16,6 +16,7 @@ Git command-line interface for trebuchet
 """
 
 import os
+import imp
 import sys
 import glob
 import argparse
