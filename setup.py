@@ -14,7 +14,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name = "Trebuchet Trigger",
+    name = "TrebuchetTrigger",
     version = "0.1",
     packages = find_packages(),
     install_requires = ['GitPython>=0.3.2'],
