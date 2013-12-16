@@ -105,3 +105,69 @@ INFO:Service restarted.
 <repo>$ git trigger service reload
 INFO:Service reloaded.
 ```
+
+Extending Trigger
+-----------------
+
+Trigger can be extended through drivers and extensions. Drivers implement core functionality and are broken into three drivers:
+
+### Drivers ###
+
+* LockDriver
+
+  Handles locking of deployment for a repository.
+
+* SyncDriver
+
+  Handles the actual deployment. This driver will generally handle deployments via two separate fetch and checkout stages.
+
+* ServiceDriver (slated for 0.3 release)
+
+  Handles the service call methods (service start/stop/restart/reload/etc.)
+
+Drivers are installed in drivers/<drivername>/<driver>.py and can be configured via git using deploy.sync-driver, deploy.lock-driver and deploy.sync-driver. For instance, trebuchet local drivers are handled like so:
+
+Installed at: drivers/trebuchet/local.py (implements SyncDriver and LockDriver)
+
+Configured using:
+
+* deploy.sync-driver: trebuchet.local.SyncDriver
+* deploy.lock-driver: trebuchet.local.LockDriver
+
+### Extensions ###
+
+Extensions are able to extend the command line to add extra actions. Extensions are installed in extensions/<extension>.py. Functions beginning with do_ are turned into cli actions. Decorators can be used to extend argparse for this action.
+
+Example extension:
+
+  class DogExtension(Extension):
+
+      @utils.arg('--big',
+                 dest='big',
+                 action='store_true',
+                 default=False,
+                 help='Make big dog sounds rather than small dog sounds.')
+      def do_bark(self, args):
+          if args.big:
+              LOG.info('WOOF')
+          else:
+              LOG.info('woof')
+
+
+Example usage:
+
+```bash
+$ cd <repo>
+
+<repo>$ git trigger bark
+INFO:woof
+
+<repo>$ git trigger bark --big
+INFO:WOOF
+
+<repo>$ git help bark
+usage: trigger bark [--big]
+
+optional arguments:
+  --big  Make big dog sounds rather than small dog sounds.
+```
