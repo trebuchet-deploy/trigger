@@ -48,7 +48,6 @@ class Trigger(object):
     def __init__(self):
         self._file_driver = CONF.drivers['file-driver']
         self._sync_driver = CONF.drivers['sync-driver']
-        self._repo = Repo(".")
 
     def do_start(self, args):
         if self._file_driver.check_lock(args):
@@ -64,19 +63,29 @@ class Trigger(object):
             # TODO (ryan-lane): Add logging call here
         except TriggerError as e:
             LOG.error(e.message)
-            self.abort(args, reset=False)
+            if self._file_driver.check_lock(args):
+                try:
+                    self._file_driver.remove_lock(args)
+                except FileDriverError as e:
+                    LOG.error(e.message)
+            raise TriggerError('Deployment failed to start', 131)
         LOG.info('Deployment started.')
 
-    def do_abort(self, args, reset=True):
+    @utils.arg('--noreset',
+               dest='noreset',
+               action='store_true',
+               default=False,
+               help='Do not reset the working tree to the start tag.')
+    def do_abort(self, args):
         if not self._file_driver.check_lock(args):
             message = 'There is no deployment to abort.'
             raise TriggerError(message, 130)
-        if reset:
+        if not args.noreset:
             try:
                 start_tag = self._get_latest_tag('start')
                 if start_tag:
-                    self._repo.reset(commit=start_tag.commit, index=True,
-                                     working_tree=True)
+                    CONF.repo.head.reset(commit=start_tag.commit, index=True,
+                                          working_tree=True)
                 else:
                     LOG.warning('Could not find a start tag to reset to.')
             except GitCommandError:
@@ -92,7 +101,7 @@ class Trigger(object):
         if not self._file_driver.check_lock():
             message = 'A deployment has not been started.'
             raise TriggerError(message, 160)
-        if self._repo.is_dirty():
+        if CONF.repo.is_dirty():
             message = ('The repository is dirty. Please commit or revert any'
                        ' uncommitted changes.')
             raise TriggerError(message, 161)
@@ -110,14 +119,14 @@ class Trigger(object):
             tag_format = '{0}-{1}-{2}'.format(CONF.config['repo-name'],
                                               tag_type,
                                               timestamp)
-            return self._repo.create_tag(tag_format)
+            return CONF.repo.create_tag(tag_format)
         except GitCommandError:
             message = 'Failed to write the {0} tag.'.format(tag_type)
             raise TriggerError(message, 190)
 
     def _get_latest_tag(self, tag_type):
         tag_filter = '-{0}-'.format(tag_type)
-        tags = filter(lambda k: tag_filter in k.name, self._repo.tags)
+        tags = filter(lambda k: tag_filter in k.name, CONF.repo.tags)
         if len(tags) > 0:
             return tags[-1]
         else:
