@@ -233,6 +233,9 @@ class Trigger(object):
             raise SystemExit(e.errorno)
 
 
-if __name__ == "__main__":
+def main():
     trigger = Trigger()
     trigger.main(sys.argv[1:])
+
+if __name__ == "__main__":
+    main()
