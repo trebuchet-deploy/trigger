@@ -21,9 +21,9 @@ The configuration of trigger depends on the drivers in use. The default drivers 
 * trebuchet.local.FileDriver
 * trebuchet.local.ServiceDriver
 
-Configuration is done through git. Some configuration items should be added in the user's configuration while other configuration should be added in the repository's configuration or global configuration. Trigger will refuse to run if these configuration items are not set.
+Configuration is done through git. Some configuration items should be added in the user's global configuration while other configuration should be added in the repository's configuration or system configuration. Trigger will refuse to run if these configuration items are not set.
 
-User configuration:
+User's global configuration:
 
 * user.name
 * user.email
@@ -31,11 +31,11 @@ User configuration:
 Repo configuration:
 
 * deploy.repo-name
-* deploy.sync-driver (has default; can also be set globally)
-* deploy.file-driver (has default; can also be set globally)
-* deploy.service-driver (has default; can also be set globally)
+* deploy.sync-driver (has default; can also be set system-wide)
+* deploy.file-driver (has default; can also be set system-wide)
+* deploy.service-driver (has default; can also be set system-wide)
 
-Global configuration:
+System configuration:
 
 * deploy.sync-driver (has default; can also be set per-repo)
 * deploy.file-driver (has default; can also be set per-repo)
