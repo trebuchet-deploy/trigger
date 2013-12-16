@@ -136,12 +136,12 @@ Configured using:
 
 ### Extensions ###
 
-Extensions are able to extend the command line to add extra actions. Extensions are installed in extensions/<extension>.py. Functions beginning with do_ are turned into cli actions. Decorators can be used to extend argparse for this action.
+Extensions are able to extend the command line to add extra actions. Extensions are installed in extensions/<extension>.py. Functions beginning with do\_ are turned into cli actions. Decorators can be used to extend argparse for this action.
 
 Example extension:
 
   class DogExtension(Extension):
-
+  
       @utils.arg('--big',
                  dest='big',
                  action='store_true',
@@ -152,7 +152,6 @@ Example extension:
               LOG.info('WOOF')
           else:
               LOG.info('woof')
-
 
 Example usage:
 
