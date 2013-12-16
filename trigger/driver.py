@@ -33,7 +33,7 @@ class SyncDriver(Driver):
         raise NotImplementedError
 
 
-class FileDriverError(Exception):
+class LockDriverError(Exception):
 
     def __init__(self, message, errorno):
         Exception.__init__(self, message)
@@ -43,7 +43,7 @@ class FileDriverError(Exception):
         return self.message
 
 
-class FileDriver(Driver):
+class LockDriver(Driver):
 
     def check_lock(self, args):
         raise NotImplementedError

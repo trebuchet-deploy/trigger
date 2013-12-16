@@ -18,7 +18,7 @@ import subprocess
 import trigger.config as config
 
 from trigger.driver import SyncDriver, SyncDriverError
-from trigger.driver import FileDriver, FileDriverError
+from trigger.driver import LockDriver, LockDriverError
 
 CONF = config.CONF
 LOG = config.LOG
@@ -133,7 +133,7 @@ class SyncDriver(SyncDriver):
             raise SyncDriverError('Error during checkout phase', 3)
 
 
-class FileDriver(FileDriver):
+class LockDriver(LockDriver):
 
     def __init__(self):
         self._deploy_dir = os.path.join(CONF.repo.working_dir, '.git/deploy')
@@ -146,19 +146,19 @@ class FileDriver(FileDriver):
         try:
             os.mkdir(self._deploy_dir)
         except OSError:
-            raise FileDriverError('Failed to create deploy directory', 1)
+            raise LockDriverError('Failed to create deploy directory', 1)
 
     def add_lock(self, args):
         try:
             open(self._lock_file, 'a').close()
         except IOError:
-            raise FileDriverError('Failed to create lock file', 2)
+            raise LockDriverError('Failed to create lock file', 2)
 
     def remove_lock(self, args):
         try:
             os.remove(self._lock_file)
         except OSError:
-            raise FileDriverError('Failed to remove lock file', 3)
+            raise LockDriverError('Failed to remove lock file', 3)
 
     def check_lock(self, args):
         return os.path.isfile(self._lock_file)

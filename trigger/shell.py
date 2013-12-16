@@ -23,7 +23,7 @@ import argparse
 from trigger import utils
 from trigger import config
 from trigger import extension
-from trigger.driver import FileDriverError, SyncDriverError
+from trigger.driver import LockDriverError, SyncDriverError
 from datetime import datetime
 from git import GitCommandError
 from git.repo import Repo
@@ -55,7 +55,7 @@ class Trigger(object):
             raise TriggerError(message, 100)
         try:
             self._file_driver.add_lock(args)
-        except FileDriverError as e:
+        except LockDriverError as e:
             LOG.error(e.message)
             raise TriggerError('Failed to start deployment', 101)
         try:
@@ -66,7 +66,7 @@ class Trigger(object):
             if self._file_driver.check_lock(args):
                 try:
                     self._file_driver.remove_lock(args)
-                except FileDriverError as e:
+                except LockDriverError as e:
                     LOG.error(e.message)
             raise TriggerError('Deployment failed to start', 131)
         LOG.info('Deployment started.')
@@ -93,7 +93,7 @@ class Trigger(object):
                 pass
         try:
             self._file_driver.remove_lock(args)
-        except FileDriverError as e:
+        except LockDriverError as e:
             raise TriggerError(e.message, 131)
         LOG.info('Deployment aborted.')
 
