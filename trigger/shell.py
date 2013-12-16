@@ -46,15 +46,15 @@ class TriggerError(Exception):
 class Trigger(object):
 
     def __init__(self):
-        self._file_driver = CONF.drivers['file-driver']
+        self._lock_driver = CONF.drivers['lock-driver']
         self._sync_driver = CONF.drivers['sync-driver']
 
     def do_start(self, args):
-        if self._file_driver.check_lock(args):
+        if self._lock_driver.check_lock(args):
             message = 'A deployment has already been started for this repo.'
             raise TriggerError(message, 100)
         try:
-            self._file_driver.add_lock(args)
+            self._lock_driver.add_lock(args)
         except LockDriverError as e:
             LOG.error(e.message)
             raise TriggerError('Failed to start deployment', 101)
@@ -63,9 +63,9 @@ class Trigger(object):
             # TODO (ryan-lane): Add logging call here
         except TriggerError as e:
             LOG.error(e.message)
-            if self._file_driver.check_lock(args):
+            if self._lock_driver.check_lock(args):
                 try:
-                    self._file_driver.remove_lock(args)
+                    self._lock_driver.remove_lock(args)
                 except LockDriverError as e:
                     LOG.error(e.message)
             raise TriggerError('Deployment failed to start', 131)
@@ -77,7 +77,7 @@ class Trigger(object):
                default=False,
                help='Do not reset the working tree to the start tag.')
     def do_abort(self, args):
-        if not self._file_driver.check_lock(args):
+        if not self._lock_driver.check_lock(args):
             message = 'There is no deployment to abort.'
             raise TriggerError(message, 130)
         if not args.noreset:
@@ -92,13 +92,13 @@ class Trigger(object):
                 LOG.error('Failed to reset to the start tag.')
                 pass
         try:
-            self._file_driver.remove_lock(args)
+            self._lock_driver.remove_lock(args)
         except LockDriverError as e:
             raise TriggerError(e.message, 131)
         LOG.info('Deployment aborted.')
 
     def do_sync(self, args):
-        if not self._file_driver.check_lock():
+        if not self._lock_driver.check_lock():
             message = 'A deployment has not been started.'
             raise TriggerError(message, 160)
         if CONF.repo.is_dirty():
