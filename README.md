@@ -132,14 +132,15 @@ Trigger can be extended through drivers and extensions. Drivers implement core f
 
   Handles the service call methods (service start/stop/restart/reload/etc.)
 
-Drivers are installed in drivers/\<drivername\>/\<driver\>.py and can be configured via git using deploy.sync-driver, deploy.lock-driver and deploy.sync-driver. For instance, trebuchet local drivers are handled like so:
+Drivers are installed in drivers/\<drivername\>/\<driver\>.py and can be configured via git using deploy.sync-driver, deploy.lock-driver and deploy.service-driver. For instance, trebuchet local drivers are handled like so:
 
-Installed at: drivers/trebuchet/local.py (implements SyncDriver and LockDriver)
+Installed at: drivers/trebuchet/local.py (implements SyncDriver, LockDriver, and ServiceDriver)
 
 Configured using:
 
 * deploy.sync-driver: trebuchet.local.SyncDriver
 * deploy.lock-driver: trebuchet.local.LockDriver
+* deploy.service-driver: trebuchet.local.ServiceDriver
 
 ### Extensions ###
 
