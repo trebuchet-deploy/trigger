@@ -183,3 +183,8 @@ usage: trigger bark [--big]
 optional arguments:
   --big  Make big dog sounds rather than small dog sounds.
 ```
+
+Getting Help
+------------
+
+For bugs, please use the github issues tracker for this project. To discuss usage or development of trigger, please join me on #trebuchet-deploy on Freenode.
