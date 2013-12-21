@@ -97,7 +97,7 @@ To abort a deployment:
 INFO:Deployment aborted.
 ```
 
-To manage services (upcoming in version 0.3):
+To manage services:
 
 ```bash
 <repo>$ git trigger service start
@@ -128,7 +128,7 @@ Trigger can be extended through drivers and extensions. Drivers implement core f
 
   Handles the actual deployment. This driver will generally handle deployments via two separate fetch and checkout stages.
 
-* ServiceDriver (slated for 0.3 release)
+* ServiceDriver
 
   Handles the service call methods (service start/stop/restart/reload/etc.)
 
