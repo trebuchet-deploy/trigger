@@ -14,6 +14,8 @@
 import sys
 import logging
 import ConfigParser
+
+from git import InvalidGitRepositoryError
 from git.repo import Repo
 
 try:
@@ -23,7 +25,7 @@ except AttributeError:
         def emit(self, record):
             pass
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 LOG = logging.getLogger(__name__)
 
 
@@ -47,14 +49,15 @@ class Configuration(object):
             self.repo = Repo('.')
             self.repo_config = self.repo.config_reader()
         except InvalidGitRepositoryError:
-            LOG.error('Not in a git repository')
-            sys.exit(1)
+            msg = 'Not in a git repository'
+            raise ConfigurationError(msg, 1)
         config = {
             'repo-name': ('deploy', 'repo-name', None),
             'user.name': ('user', 'name', None),
             'user.email': ('user', 'email', None),
         }
         self._register_config(config)
+        self.register_drivers()
 
     def register_drivers(self):
         driver_config = {
@@ -75,13 +78,12 @@ class Configuration(object):
                 LOG.debug('Importing {}'.format(mod))
                 __import__(mod)
                 driver_class = getattr(sys.modules[mod], cls)
-                self.drivers[driver] = driver_class()
+                self.drivers[driver] = driver_class(self)
                 self._register_config(self.drivers[driver].get_config())
             except (ValueError, AttributeError):
                 # TODO (ryan-lane): set an error condition and exit after all
                 #                   config has been parsed
                 msg = 'Failed to import driver: {0}'.format(mod)
-                LOG.error(msg)
                 raise ConfigurationError(msg, 1)
 
     def _register_config(self, config):
@@ -94,11 +96,7 @@ class Configuration(object):
                 else:
                     msg = ('Missing the following configuration item in the'
                            ' git config: {0}.{1}').format(val[0], val[1])
-                    LOG.error(msg)
                     raise ConfigurationError(msg, 2)
 
     def register_cli_options(self, options):
         raise NotImplementedError
-
-
-CONF = Configuration()

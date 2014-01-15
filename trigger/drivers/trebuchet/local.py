@@ -22,14 +22,15 @@ from driver import SyncDriverError
 from driver import LockDriverError
 from driver import ServiceDriverError
 
-CONF = config.CONF
 LOG = config.LOG
 
 
 class SyncDriver(driver.SyncDriver):
 
-    def __init__(self):
-        self._deploy_dir = os.path.join(CONF.repo.working_dir, '.git/deploy')
+    def __init__(self, conf):
+        self.conf = conf
+        self._deploy_dir = os.path.join(self.conf.repo.working_dir,
+                                        '.git/deploy')
 
     def _write_deploy_file(self, tag):
         deploy_file = os.path.join(self._deploy_dir, 'deploy')
@@ -37,7 +38,7 @@ class SyncDriver(driver.SyncDriver):
         tag_info = {
             'tag': tag.name,
             'sync-time': timestamp,
-            'user': CONF.config['user.name'],
+            'user': self.conf.config['user.name'],
         }
         try:
             f = open(deploy_file, 'w+')
@@ -58,22 +59,22 @@ class SyncDriver(driver.SyncDriver):
             # The same tag used in the parent needs to exist in the submodule
             cmd = 'git submodule foreach --recursive "git tag {0}"'
             cmd = cmd.format(tag.name)
-            p = subprocess.Popen(cmd, cwd=CONF.repo.working_dir, shell=True,
-                                 stdout=subprocess.PIPE,
+            p = subprocess.Popen(cmd, cwd=self.conf.repo.working_dir,
+                                 shell=True, stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
             p.communicate()
             # TODO (ryan-lane): Find a way to do this without a separate
             #                   bash script.
             p = subprocess.Popen('git submodule foreach --recursive '
                                  '"submodule-update-server-info"',
-                                 cwd=CONF.repo.working_dir, shell=True,
+                                 cwd=self.conf.repo.working_dir, shell=True,
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
             p.communicate()
 
     def _fetch(self, args):
         # TODO (ryan-lane): Check return values from these commands
-        repo_name = CONF.config['repo-name']
+        repo_name = self.conf.config['repo-name']
         cmd = "sudo salt-call -l quiet publish.runner deploy.fetch '{0}'"
         cmd = cmd.format(repo_name)
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
@@ -81,7 +82,7 @@ class SyncDriver(driver.SyncDriver):
 
     def _checkout(self, args):
         # TODO (ryan-lane): Check return values from these commands
-        repo_name = CONF.config['repo-name']
+        repo_name = self.conf.config['repo-name']
         cmd = ("sudo salt-call -l quiet publish.runner"
               " deploy.checkout '{0},{1}'")
         cmd = cmd.format(repo_name, args.force)
@@ -91,7 +92,7 @@ class SyncDriver(driver.SyncDriver):
     def _ask(self, stage, args):
         # TODO (ryan-lane): Use deploy-info as a library, rather
         #                   than shelling out
-        repo_name = CONF.config['repo-name']
+        repo_name = self.conf.config['repo-name']
         if stage == "fetch":
             check = "deploy-info --repo=%s --fetch"
         elif stage == "checkout":
@@ -137,8 +138,10 @@ class SyncDriver(driver.SyncDriver):
 
 class LockDriver(driver.LockDriver):
 
-    def __init__(self):
-        self._deploy_dir = os.path.join(CONF.repo.working_dir, '.git/deploy')
+    def __init__(self, conf):
+        self.conf = conf
+        self._deploy_dir = os.path.join(self.conf.repo.working_dir,
+                                        '.git/deploy')
         self._lock_file = os.path.join(self._deploy_dir, 'lock')
         self._create_deploy_dir()
 
@@ -167,6 +170,9 @@ class LockDriver(driver.LockDriver):
 
 
 class ServiceDriver(driver.ServiceDriver):
+
+    def __init__(self, conf):
+        self.conf = conf
 
     def stop(self, args):
         raise NotImplementedError

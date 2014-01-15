@@ -1,3 +1,4 @@
+#!/usr/bin/python
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -27,12 +28,11 @@ from trigger import extension
 from trigger.driver import LockDriverError
 from trigger.driver import SyncDriverError
 from trigger.driver import ServiceDriverError
+from trigger.config import ConfigurationError
 from datetime import datetime
 from git import GitCommandError
 from git.repo import Repo
 
-CONF = config.CONF
-CONF.register_drivers()
 LOG = config.LOG
 
 
@@ -48,10 +48,11 @@ class TriggerError(Exception):
 
 class Trigger(object):
 
-    def __init__(self):
-        self._lock_driver = CONF.drivers['lock-driver']
-        self._sync_driver = CONF.drivers['sync-driver']
-        self._service_driver = CONF.drivers['service-driver']
+    def __init__(self, conf):
+        self.conf = conf
+        self._lock_driver = self.conf.drivers['lock-driver']
+        self._sync_driver = self.conf.drivers['sync-driver']
+        self._service_driver = self.conf.drivers['service-driver']
 
     def do_start(self, args):
         if self._lock_driver.check_lock(args):
@@ -88,8 +89,9 @@ class Trigger(object):
             try:
                 start_tag = self._get_latest_tag('start')
                 if start_tag:
-                    CONF.repo.head.reset(commit=start_tag.commit, index=True,
-                                          working_tree=True)
+                    self.conf.repo.head.reset(commit=start_tag.commit,
+                                              index=True,
+                                              working_tree=True)
                 else:
                     LOG.warning('Could not find a start tag to reset to.')
             except GitCommandError:
@@ -105,7 +107,7 @@ class Trigger(object):
         if not self._lock_driver.check_lock(args):
             message = 'A deployment has not been started.'
             raise TriggerError(message, 160)
-        if CONF.repo.is_dirty():
+        if self.conf.repo.is_dirty():
             message = ('The repository is dirty. Please commit or revert any'
                        ' uncommitted changes.')
             raise TriggerError(message, 161)
@@ -120,17 +122,17 @@ class Trigger(object):
         #TODO: use a tag driver
         timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
         try:
-            tag_format = '{0}-{1}-{2}'.format(CONF.config['repo-name'],
+            tag_format = '{0}-{1}-{2}'.format(self.conf.config['repo-name'],
                                               tag_type,
                                               timestamp)
-            return CONF.repo.create_tag(tag_format)
+            return self.conf.repo.create_tag(tag_format)
         except GitCommandError:
             message = 'Failed to write the {0} tag.'.format(tag_type)
             raise TriggerError(message, 190)
 
     def _get_latest_tag(self, tag_type):
         tag_filter = '-{0}-'.format(tag_type)
-        tags = filter(lambda k: tag_filter in k.name, CONF.repo.tags)
+        tags = filter(lambda k: tag_filter in k.name, self.conf.repo.tags)
         if len(tags) > 0:
             return tags[-1]
         else:
@@ -192,11 +194,13 @@ class Trigger(object):
             yield name, module
 
     def _get_base_parser(self):
+        epilog = ('See "{0} help COMMAND" '
+                  'for help on a specific command.')
+        epilog = epilog.format(self.command_name)
         parser = argparse.ArgumentParser(
-            prog="trigger",
+            prog=self.command_name,
             description=__doc__.strip(),
-            epilog='See "trigger help COMMAND" '
-                   'for help on a specific command.',
+            epilog=epilog,
             add_help=False
         )
 
@@ -238,8 +242,10 @@ class Trigger(object):
                 subparser.add_argument(*args, **kwargs)
             subparser.set_defaults(func=callback)
 
-    def main(self, argv):
+    def main(self, name, argv):
         # TODO (ryan-lane): Add novaclient's model for hooks
+	name = os.path.basename(name)
+        self.command_name = name[4:]
         self.extensions = self._discover_extensions()
         self.parser = self._get_subcommand_parser()
         args = self.parser.parse_args(argv)
@@ -256,8 +262,13 @@ class Trigger(object):
 
 
 def main():
-    trigger = Trigger()
-    trigger.main(sys.argv[1:])
+    try:
+        conf = config.Configuration()
+    except ConfigurationError as e:
+        LOG.error(e.message)
+        raise SystemExit(e.errorno)
+    trigger = Trigger(conf)
+    trigger.main(sys.argv[0], sys.argv[1:])
 
 if __name__ == "__main__":
     main()
