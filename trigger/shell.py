@@ -181,18 +181,23 @@ class Trigger(object):
                help='Service action to take: stop|start|restart|reload')
     @utils.arg('--batch',
                dest='batch',
+               default='10%',
                help='Number or percentage of targets to target for'
                     ' batch processing.')
     def do_service(self, args):
         """
         Manage the service associated with this repository.
         """
+        # TODO (ryan-lane): Make this more extendable and have the help
+        #                   report implemented functions.
         try:
-            getattr(self.service_driver, args.action)(args)
+            getattr(self._service_driver, args.action)(args)
         except AttributeError, NotImplementedError:
             msg = '{0} is not an action implemented by this service driver.'
             msg = msg.format(args.action)
             raise TriggerError(msg, 200)
+        except ServiceDriverError as e:
+            raise TriggerError(e.message, 201)
 
     @utils.arg('command', metavar='<subcommand>', nargs='?',
                help='Display help for <subcommand>.')
@@ -204,8 +209,8 @@ class Trigger(object):
             if args.command in self.subcommands:
                 self.subcommands[args.command].print_help()
             else:
-                raise exc.CommandError("'%s' is not a valid subcommand" %
-                                       args.command)
+                msg = "'{0}' is not a valid subcommand".format(args.command)
+                raise TriggerError(msg, 1)
         else:
             self.parser.print_help()
 
@@ -288,11 +293,10 @@ class Trigger(object):
         self.parser = self._get_subcommand_parser()
         args = self.parser.parse_args(argv)
 
-        if args.func == self.do_help:
-            self.do_help(args)
-            return 0
-
         try:
+            if args.func == self.do_help:
+                self.do_help(args)
+                return 0
             args.func(args)
         except TriggerError as e:
             LOG.error(e.message)

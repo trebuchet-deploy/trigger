@@ -184,14 +184,35 @@ class ServiceDriver(driver.ServiceDriver):
     def __init__(self, conf):
         self.conf = conf
 
-    def stop(self, args):
-        raise NotImplementedError
-
-    def start(self, args):
-        raise NotImplementedError
-
     def restart(self, args):
-        raise NotImplementedError
-
-    def reload(self, args):
-        raise NotImplementedError
+        repo = self.conf.config['repo-name']
+        cmd = ("sudo salt-call -l quiet --out=json publish.runner "
+               "deploy.restart '{0}','{1}'")
+        p = subprocess.Popen(cmd.format(repo, args.batch),
+                             shell=True,
+                             stdout=subprocess.PIPE)
+        out = p.communicate()[0]
+        ## Disabled until salt bug is fixed:
+        ##   https://github.com/saltstack/salt/issues/9146
+        #LOG.info('Service restart sent to salt. Check the status using:'
+        #         ' deploy-info --repo={0} --restart'.format(repo))
+        ## Display the data directly from the runner return until bug is fixed.
+        try:
+            minion_data = json.loads(out)
+        except (ValueError, AttributeError):
+            msg = 'Could not parse salt return; raw output:\n\n{0}'
+            raise ServiceDriverError(msg.format(out), 1)
+        minion_data = minion_data['local']
+        if isinstance(minion_data, basestring):
+            msg = 'Error received from salt; raw output:\n\n{0}'
+            raise ServiceDriverError(msg.format(minion_data), 2)
+        for i in minion_data:
+            try:
+                for minion, data in i.items():
+                    try:
+                        LOG.info('{0}: {1}'.format(minion, data['status']))
+                    except KeyError:
+                        LOG.info('{0}: No status available'.format(minion))
+            except AttributeError:
+                LOG.error('Got bad return from salt. Here is the raw data:')
+                LOG.error('{}'.format(i))
