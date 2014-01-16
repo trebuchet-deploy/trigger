@@ -25,7 +25,7 @@ except AttributeError:
         def emit(self, record):
             pass
 
-logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(message)s', level=logging.INFO)
 LOG = logging.getLogger(__name__)
 
 
@@ -91,7 +91,7 @@ class Configuration(object):
             try:
                 self.config[key] = self.repo_config.get_value(val[0], val[1])
             except (ConfigParser.NoOptionError, ConfigParser.NoSectionError):
-                if val[2]:
+                if val[2] is not None:
                     self.config[key] = val[2]
                 else:
                     msg = ('Missing the following configuration item in the'

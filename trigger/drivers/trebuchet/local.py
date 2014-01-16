@@ -32,6 +32,11 @@ class SyncDriver(driver.SyncDriver):
         self._deploy_dir = os.path.join(self.conf.repo.working_dir,
                                         '.git/deploy')
 
+    def get_config(self):
+        return {
+            'checkout-submodules': ('deploy', 'checkout-submodules', False)
+        }
+
     def _write_deploy_file(self, tag):
         deploy_file = os.path.join(self._deploy_dir, 'deploy')
         timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
@@ -55,7 +60,7 @@ class SyncDriver(driver.SyncDriver):
                              stderr=subprocess.PIPE)
         p.communicate()
         # Also update server info for all submodules
-        if checkout_submodules:
+        if self.conf.config['checkout-submodules']:
             # The same tag used in the parent needs to exist in the submodule
             cmd = 'git submodule foreach --recursive "git tag {0}"'
             cmd = cmd.format(tag.name)
@@ -130,10 +135,15 @@ class SyncDriver(driver.SyncDriver):
         self._fetch(args)
         # TODO (ryan-lane): Add repo dependencies here
         if not self._ask('fetch', args):
-            raise SyncDriverError('Error during fetch phase', 2)
+            msg = ('Not continuing to checkout phase. A deployment is still'
+                   ' underway, please finish, sync, or abort.')
+            raise SyncDriverError(msg, 2)
         self._checkout(args)
         if not self._ask('checkout', args):
-            raise SyncDriverError('Error during checkout phase', 3)
+            msg = ('Not continuing to finish phase. A checkout has already'
+                    ' occurred. Please finish, sync or revert. Aborting'
+                    ' at this phase is not recommended.')
+            raise SyncDriverError(msg, 3)
 
 
 class LockDriver(driver.LockDriver):

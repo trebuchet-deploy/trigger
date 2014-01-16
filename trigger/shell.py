@@ -25,9 +25,10 @@ import argparse
 from trigger import utils
 from trigger import config
 from trigger import extension
-from trigger.driver import LockDriverError
-from trigger.driver import SyncDriverError
-from trigger.driver import ServiceDriverError
+from trigger import driver
+from driver import LockDriverError
+from driver import SyncDriverError
+from driver import ServiceDriverError
 from trigger.config import ConfigurationError
 from datetime import datetime
 from git import GitCommandError
@@ -55,6 +56,9 @@ class Trigger(object):
         self._service_driver = self.conf.drivers['service-driver']
 
     def do_start(self, args):
+        """
+        Start a deployment for this repository and hold the deployment lock.
+        """
         if self._lock_driver.check_lock(args):
             message = 'A deployment has already been started for this repo.'
             raise TriggerError(message, 100)
@@ -82,6 +86,10 @@ class Trigger(object):
                default=False,
                help='Do not reset the working tree to the start tag.')
     def do_abort(self, args):
+        """
+        Abort this deployment, resetting the local repository back to the
+        start tag.
+        """
         if not self._lock_driver.check_lock(args):
             message = 'There is no deployment to abort.'
             raise TriggerError(message, 130)
@@ -103,7 +111,16 @@ class Trigger(object):
             raise TriggerError(e.message, 131)
         LOG.info('Deployment aborted.')
 
+    @utils.arg('--force',
+               dest='force',
+               action='store_true',
+               default=False,
+               help='Force a sync even if nothing changed locally.')
     def do_sync(self, args):
+        """
+        Synchronize the current state of the local repository to all
+        deployment targets.
+        """
         if not self._lock_driver.check_lock(args):
             message = 'A deployment has not been started.'
             raise TriggerError(message, 160)
@@ -117,6 +134,27 @@ class Trigger(object):
             self._sync_driver.sync(tag, args)
         except SyncDriverError as e:
             raise TriggerError(e.message, 163)
+        try:
+            self._lock_driver.remove_lock(args)
+        except LockDriverError as e:
+            raise TriggerError(e.message, 131)
+        # TODO (ryan-lane): display amount of time of deployment
+        LOG.info('Deployment finished.')
+
+    def do_finish(self, args):
+        """
+        Finish the deployment and release the deloyment lock. This is called
+        automatically when sync successfully exits.
+        """
+        if not self._lock_driver.check_lock(args):
+            message = 'A deployment has not been started.'
+            raise TriggerError(message, 160)
+        try:
+            self._lock_driver.remove_lock(args)
+        except LockDriverError as e:
+            raise TriggerError(e.message, 131)
+        # TODO (ryan-lane): display amount of time of deployment
+        LOG.info('Deployment finished.')
 
     def _write_tag(self, tag_type):
         #TODO: use a tag driver
