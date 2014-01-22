@@ -90,7 +90,7 @@ class SyncDriver(driver.SyncDriver):
         # TODO (ryan-lane): Check return values from these commands
         repo_name = self.conf.config['repo-name']
         cmd = ("sudo salt-call -l quiet publish.runner"
-              " deploy.checkout '{0},{1}'")
+               " deploy.checkout '{0},{1}'")
         cmd = cmd.format(repo_name, args.force)
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
         p.communicate()
@@ -174,7 +174,7 @@ class LockDriver(driver.LockDriver):
             f = open(self._lock_file, 'w+')
             f.write(json.dumps(lock_info))
             f.close()
-        except OSError:
+        except (OSError, IOError):
             raise LockDriverError('Failed to write lock file', 1)
 
     def remove_lock(self, args):
@@ -190,7 +190,7 @@ class LockDriver(driver.LockDriver):
             lock_info = json.loads(lock_info)
             f.close()
             return lock_info
-        except OSError:
+        except (OSError, IOError):
             return {}
         except (KeyError, ValueError):
             return {'user': None, 'time': None}
