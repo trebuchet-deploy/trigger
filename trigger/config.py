@@ -11,7 +11,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import os
 import sys
+import yaml
 import logging
 import ConfigParser
 
@@ -43,14 +45,16 @@ class Configuration(object):
 
     config = {}
     drivers = {}
+    _config_levels = ['system', 'global', 'trigger', 'repository']
 
     def __init__(self):
         try:
             self.repo = Repo('.')
-            self.repo_config = self.repo.config_reader()
         except InvalidGitRepositoryError:
             msg = 'Not in a git repository'
             raise ConfigurationError(msg, 1)
+        self._load_config()
+        self._missing_config = {}
         config = {
             'repo-name': ('deploy', 'repo-name', None),
             'user.name': ('user', 'name', None),
@@ -58,6 +62,23 @@ class Configuration(object):
         }
         self._register_config(config)
         self.register_drivers()
+        self._check_config()
+
+    def _load_config(self):
+        self._repo_config = {}
+        self._repo_config['system'] = self.repo.config_reader('system')
+        self._repo_config['global'] = self.repo.config_reader('global')
+        try:
+            f = open(os.path.join(self.repo.working_dir, '.trigger'), 'r')
+            trigger_config = f.read()
+            f.close()
+            self._repo_config['trigger'] = yaml.safe_load(trigger_config)
+        except (IOError, OSError):
+            self._repo_config['trigger'] = {}
+        except (ValueError, KeyError):
+            LOG.warning('Found a .trigger config file, but could not parse'
+                        ' it. Unable to load repo specific config.')
+        self._repo_config['repository'] = self.repo.config_reader('repository')
 
     def register_drivers(self):
         driver_config = {
@@ -81,22 +102,38 @@ class Configuration(object):
                 self.drivers[driver] = driver_class(self)
                 self._register_config(self.drivers[driver].get_config())
             except (ValueError, AttributeError):
-                # TODO (ryan-lane): set an error condition and exit after all
-                #                   config has been parsed
                 msg = 'Failed to import driver: {0}'.format(mod)
                 raise ConfigurationError(msg, 1)
 
     def _register_config(self, config):
+        for level in self._config_levels:
+            repo_config = self._repo_config[level]
+            for key, val in config.items():
+                try:
+                    if level == 'trigger':
+                        _key = '{0}.{1}'.format(val[0], val[1])
+                        self.config[key] = repo_config[_key]
+                    else:
+                        self.config[key] = repo_config.get_value(val[0],
+                                                                 val[1])
+                except (KeyError,
+                        ConfigParser.NoOptionError,
+                        ConfigParser.NoSectionError):
+                    if val[2] is not None:
+                        self.config[key] = val[2]
         for key, val in config.items():
-            try:
-                self.config[key] = self.repo_config.get_value(val[0], val[1])
-            except (ConfigParser.NoOptionError, ConfigParser.NoSectionError):
-                if val[2] is not None:
-                    self.config[key] = val[2]
-                else:
-                    msg = ('Missing the following configuration item in the'
-                           ' git config: {0}.{1}').format(val[0], val[1])
-                    raise ConfigurationError(msg, 2)
+            if key not in self.config:
+                self._missing_config[key] = val
+
+    def _check_config(self):
+        if self._missing_config:
+            for key, val in self._missing_config.items():
+                msg = ('Missing the following configuration item:'
+                       ' {0}.{1}').format(val[0], val[1])
+                LOG.error(msg)
+            raise ConfigurationError('Please add the missing configuration'
+                                     ' items via git config or in the'
+                                     ' .trigger file', 1)
 
     def register_cli_options(self, options):
         raise NotImplementedError

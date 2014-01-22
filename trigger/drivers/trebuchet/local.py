@@ -29,8 +29,8 @@ class SyncDriver(driver.SyncDriver):
 
     def __init__(self, conf):
         self.conf = conf
-        self._deploy_dir = os.path.join(self.conf.repo.working_dir,
-                                        '.git/deploy')
+        self._deploy_dir = os.path.join(self.conf.repo.git_dir,
+                                        'deploy')
 
     def get_config(self):
         return {
@@ -151,8 +151,8 @@ class LockDriver(driver.LockDriver):
 
     def __init__(self, conf):
         self.conf = conf
-        self._deploy_dir = os.path.join(self.conf.repo.working_dir,
-                                        '.git/deploy')
+        self._deploy_dir = os.path.join(self.conf.repo.git_dir,
+                                        'deploy')
         self._lock_file = os.path.join(self._deploy_dir, 'lock')
         self._create_deploy_dir()
 
