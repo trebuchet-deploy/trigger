@@ -36,7 +36,7 @@ class ConfigurationError(Exception):
         self.errorno = errorno
 
     def __str__(self):
-        return message
+        return self.message
 
 
 class Configuration(object):

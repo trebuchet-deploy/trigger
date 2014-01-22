@@ -43,6 +43,7 @@ class SyncDriver(driver.SyncDriver):
         tag_info = {
             'tag': tag.name,
             'sync-time': timestamp,
+            'time': timestamp,
             'user': self.conf.config['user.name'],
         }
         try:
@@ -141,8 +142,8 @@ class SyncDriver(driver.SyncDriver):
         self._checkout(args)
         if not self._ask('checkout', args):
             msg = ('Not continuing to finish phase. A checkout has already'
-                    ' occurred. Please finish, sync or revert. Aborting'
-                    ' at this phase is not recommended.')
+                   ' occurred. Please finish, sync or revert. Aborting'
+                   ' at this phase is not recommended.')
             raise SyncDriverError(msg, 3)
 
 
@@ -164,10 +165,17 @@ class LockDriver(driver.LockDriver):
             raise LockDriverError('Failed to create deploy directory', 1)
 
     def add_lock(self, args):
+        timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+        lock_info = {
+            'time': timestamp,
+            'user': self.conf.config['user.name'],
+        }
         try:
-            open(self._lock_file, 'a').close()
-        except IOError:
-            raise LockDriverError('Failed to create lock file', 2)
+            f = open(self._lock_file, 'w+')
+            f.write(json.dumps(lock_info))
+            f.close()
+        except OSError:
+            raise LockDriverError('Failed to write lock file', 1)
 
     def remove_lock(self, args):
         try:
@@ -176,7 +184,15 @@ class LockDriver(driver.LockDriver):
             raise LockDriverError('Failed to remove lock file', 3)
 
     def check_lock(self, args):
-        return os.path.isfile(self._lock_file)
+        try:
+            f = open(self._lock_file, 'r+')
+            lock_info = f.read()
+            lock_info = json.loads(lock_info)
+            return lock_info
+        except OSError:
+            return {}
+        except (KeyError, ValueError):
+            return {'user': None, 'time': None}
 
 
 class ServiceDriver(driver.ServiceDriver):

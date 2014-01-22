@@ -25,14 +25,12 @@ import argparse
 from trigger import utils
 from trigger import config
 from trigger import extension
-from trigger import driver
 from driver import LockDriverError
 from driver import SyncDriverError
 from driver import ServiceDriverError
 from trigger.config import ConfigurationError
 from datetime import datetime
 from git import GitCommandError
-from git.repo import Repo
 
 LOG = config.LOG
 
@@ -59,8 +57,14 @@ class Trigger(object):
         """
         Start a deployment for this repository and hold the deployment lock.
         """
-        if self._lock_driver.check_lock(args):
-            message = 'A deployment has already been started for this repo.'
+        lock_info = self._lock_driver.check_lock(args)
+        if lock_info:
+            if lock_info['user']:
+                message = ('A deployment has already been started for this'
+                           ' repo by {0}.').format(lock_info['user'])
+            else:
+                message = ('A deployment has already been started for this'
+                           'repo.')
             raise TriggerError(message, 100)
         try:
             self._lock_driver.add_lock(args)
@@ -85,14 +89,25 @@ class Trigger(object):
                action='store_true',
                default=False,
                help='Do not reset the working tree to the start tag.')
+    @utils.arg('--force',
+               dest='force',
+               action='store_true',
+               default=False,
+               help='Abort even if another user started this deployment.')
     def do_abort(self, args):
         """
         Abort this deployment, resetting the local repository back to the
         start tag.
         """
-        if not self._lock_driver.check_lock(args):
+        lock_info = self._lock_driver.check_lock(args)
+        if not lock_info:
             message = 'There is no deployment to abort.'
             raise TriggerError(message, 130)
+        if lock_info['user'] != self.conf.config['user.name']:
+            if not args.force:
+                message = ('User {0} started this deployment, use --force to'
+                           ' abort that deployment.')
+                raise TriggerError(message, 132)
         if not args.noreset:
             try:
                 start_tag = self._get_latest_tag('start')
@@ -192,7 +207,7 @@ class Trigger(object):
         #                   report implemented functions.
         try:
             getattr(self._service_driver, args.action)(args)
-        except AttributeError, NotImplementedError:
+        except (AttributeError, NotImplementedError):
             msg = '{0} is not an action implemented by this service driver.'
             msg = msg.format(args.action)
             raise TriggerError(msg, 200)
@@ -272,14 +287,12 @@ class Trigger(object):
             arguments = getattr(callback, 'arguments', [])
 
             subparser = subparsers.add_parser(command,
-                help=action_help,
-                description=desc,
-                add_help=False
-            )
+                                              help=action_help,
+                                              description=desc,
+                                              add_help=False)
             subparser.add_argument('-h', '--help',
-                action='help',
-                help=argparse.SUPPRESS,
-            )
+                                   action='help',
+                                   help=argparse.SUPPRESS)
             self.subcommands[command] = subparser
             for (args, kwargs) in arguments:
                 subparser.add_argument(*args, **kwargs)
@@ -287,7 +300,7 @@ class Trigger(object):
 
     def main(self, name, argv):
         # TODO (ryan-lane): Add novaclient's model for hooks
-	name = os.path.basename(name)
+        name = os.path.basename(name)
         self.command_name = name[4:]
         self.extensions = self._discover_extensions()
         self.parser = self._get_subcommand_parser()
