@@ -7,6 +7,7 @@ Requirements
 ------------
 
 * GitPython>=0.3.2.RC1
+* PyYAML>=3.10
 
 Though trigger's default backend is trebuchet, it isn't necessary to use trebuchet as the backend. Any backend can be used by writing the appropriate drivers necessary for your backend. See the _Extending Trigger_ section for information about drivers and extensions.
 

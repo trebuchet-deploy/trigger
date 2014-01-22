@@ -14,10 +14,10 @@
 from setuptools import setup, find_packages
 
 setup(
-    name = "TrebuchetTrigger",
-    version = "0.3",
-    packages = find_packages(),
-    install_requires = ['GitPython>=0.3.2.RC1'],
+    name="TrebuchetTrigger",
+    version="0.4",
+    packages=find_packages(),
+    install_requires=['GitPython>=0.3.2.RC1'],
 
     author="Ryan Lane",
     author_email="ryan@ryandlane.com",
@@ -25,7 +25,7 @@ setup(
     license="apache2",
     url="https://github.com/trebuchet-deploy/trigger",
 
-    entry_points = {
+    entry_points={
         'console_scripts': [
             'git-trigger = trigger.shell:main',
             'git-deploy = trigger.shell:main',
