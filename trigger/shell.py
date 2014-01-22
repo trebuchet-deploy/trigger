@@ -105,7 +105,7 @@ class Trigger(object):
             raise TriggerError(message, 130)
         if lock_info['user'] != self.conf.config['user.name']:
             if not args.force:
-                message = ('User {0} started this deployment, use --force to'
+                message = ('{0} started this deployment, use --force to'
                            ' abort that deployment.').format(lock_info['user'])
                 raise TriggerError(message, 132)
         if not args.noreset:
