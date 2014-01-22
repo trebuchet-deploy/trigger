@@ -185,9 +185,10 @@ class LockDriver(driver.LockDriver):
 
     def check_lock(self, args):
         try:
-            f = open(self._lock_file, 'r+')
+            f = open(self._lock_file, 'r')
             lock_info = f.read()
             lock_info = json.loads(lock_info)
+            f.close()
             return lock_info
         except OSError:
             return {}
