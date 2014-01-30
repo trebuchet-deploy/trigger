@@ -15,7 +15,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="TrebuchetTrigger",
-    version="0.4",
+    version="0.4.1",
     packages=find_packages(),
     install_requires=['GitPython>=0.3.2.RC1'],
 
@@ -29,6 +29,7 @@ setup(
         'console_scripts': [
             'git-trigger = trigger.shell:main',
             'git-deploy = trigger.shell:main',
+            'trigger-submodule-update = trigger.utils.submodule_update:main',
         ],
     },
 )

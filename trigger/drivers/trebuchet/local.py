@@ -72,7 +72,7 @@ class SyncDriver(driver.SyncDriver):
             # TODO (ryan-lane): Find a way to do this without a separate
             #                   bash script.
             p = subprocess.Popen('git submodule foreach --recursive '
-                                 '"submodule-update-server-info"',
+                                 '"trigger-submodule-update"',
                                  cwd=self.conf.repo.working_dir, shell=True,
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
