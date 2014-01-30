@@ -1,3 +1,14 @@
+trebuchet-trigger (0.4-1) precise; urgency=low
+
+  * Add support for a .trigger configuration file
+  * Messaging changes
+  * Store information in lock file
+  * Configuration load order changes
+  * Added service driver
+  * Fixed a number of errors during workflow
+
+ -- Ryan Lane <ryan@ryandlane.com>  Thu, 30 Jan 2014 21:15:45 +0000
+
 trebuchet-trigger (0.3-1) precise; urgency=low
 
   * source package automatically created by stdeb 0.6.0
