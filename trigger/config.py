@@ -88,6 +88,8 @@ class Configuration(object):
                             'trebuchet.local.LockDriver'),
             'service-driver': ('deploy', 'service-driver',
                                'trebuchet.local.ServiceDriver'),
+            'report-driver': ('deploy', 'report-driver',
+                              'trebuchet.local.ReportDriver'),
         }
         self._register_config(driver_config)
         for driver in driver_config:

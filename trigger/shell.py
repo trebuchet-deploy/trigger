@@ -28,6 +28,7 @@ from trigger import extension
 from trigger.drivers import LockDriverError
 from trigger.drivers import SyncDriverError
 from trigger.drivers import ServiceDriverError
+from trigger.drivers import ReportDriverError
 from trigger.config import ConfigurationError
 from datetime import datetime
 from git import GitCommandError
@@ -52,6 +53,7 @@ class Trigger(object):
         self._lock_driver = self.conf.drivers['lock-driver']
         self._sync_driver = self.conf.drivers['sync-driver']
         self._service_driver = self.conf.drivers['service-driver']
+        self._report_driver = self.conf.drivers['report-driver']
 
     def do_start(self, args):
         """
@@ -213,6 +215,23 @@ class Trigger(object):
             raise TriggerError(msg, 200)
         except ServiceDriverError as e:
             raise TriggerError(e.message, 201)
+
+    @utils.arg('action',
+               metavar='<action>',
+               help='Service action to take: sync|service')
+    @utils.arg('--detailed',
+               dest='detailed',
+               default=False,
+               help='Show report for all minions rather than a summary')
+    def do_report(self, args):
+        """
+        Report information about this repository's deployments.
+        """
+        try:
+            self._report_driver.report(args)
+        except ReportDriverError as e:
+            LOG.error(e.message)
+            raise TriggerError('The reporter failed.', 210)
 
     @utils.arg('command', metavar='<subcommand>', nargs='?',
                help='Display help for <subcommand>.')
