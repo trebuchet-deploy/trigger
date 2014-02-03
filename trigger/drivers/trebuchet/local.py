@@ -23,6 +23,7 @@ from datetime import datetime
 from trigger.drivers import SyncDriverError
 from trigger.drivers import LockDriverError
 from trigger.drivers import ServiceDriverError
+from trigger.drivers import ReportDriverError
 
 LOG = config.LOG
 
@@ -128,21 +129,21 @@ class SyncDriver(drivers.SyncDriver):
         self._update_server_info(tag)
         self._fetch(args)
         # TODO (ryan-lane): Add repo dependencies here
-        if not self._ask('fetch', args, tag):
+        if not self._ask('fetch', args, tag.name):
             msg = ('Not continuing to checkout phase. A deployment is still'
                    ' underway, please finish, sync, or abort.')
             raise SyncDriverError(msg, 2)
         self._checkout(args)
-        if not self._ask('checkout', args, tag):
+        if not self._ask('checkout', args, tag.name):
             msg = ('Not continuing to finish phase. A checkout has already'
                    ' occurred. Please finish, sync or revert. Aborting'
                    ' at this phase is not recommended.')
             raise SyncDriverError(msg, 3)
 
-    def get_deploy_info(self, tag):
+    def get_deploy_info(self):
         try:
             f = open(self._deploy_file, 'r')
-            deploy_info = json.loads(f.read(f))
+            deploy_info = json.loads(f.read())
             f.close()
             return deploy_info
         except OSError:
@@ -237,7 +238,7 @@ class ServiceDriver(drivers.ServiceDriver):
                 LOG.error('{}'.format(i))
 
 
-class ReportDriver(driver.ServiceDriver):
+class ReportDriver(driver.ReportDriver):
 
     def __init__(self, conf):
         self.conf = conf
@@ -248,7 +249,7 @@ class ReportDriver(driver.ServiceDriver):
 
     def _mins_ago(self, now, timestamp):
         if timestamp:
-            time = datetime.datetime.fromtimestamp(float(timestamp))
+            time = datetime.fromtimestamp(float(timestamp))
             delta = now - time
             mins = delta.seconds / 60
         else:
@@ -258,7 +259,7 @@ class ReportDriver(driver.ServiceDriver):
     def _get_minion_data(self, serv, repo, minion):
         # TODO (ryan-lane): use hgetall, this is absurd
         data = {}
-        now = datetime.datetime.now()
+        now = datetime.now()
         minion_key = 'deploy:{0}:minions:{1}'.format(repo, minion)
         data['fetch_status'] = serv.hget(minion_key, 'fetch_status')
         fetch_checkin_timestamp = serv.hget(minion_key,
@@ -288,16 +289,33 @@ class ReportDriver(driver.ServiceDriver):
     def report_sync(self, tag, report_type='full', detailed=False):
         serv = self._get_redis_serv()
         repo_name = self.conf.config['repo-name']
-        LOG.info("")
-        header = 'Repo: {0}; checking tag: {1}'.format(repo_name, tag)
-        LOG.info(header)
+        LOG.info('Repo: {}'.format(repo_name))
+        LOG.info('Tag: {}'.format(tag))
         minions = serv.smembers('deploy:{0}:minions'.format(repo_name))
         _fetch_info = self._get_fetch_info(serv, repo_name, minions, tag)
         _checkout_info = self._get_checkout_info(serv, repo_name, minions, tag)
+        min_len = len(minions)
+        fetch_len = len(_fetch_info['complete'])
+        checkout_len = len(_checkout_info['complete'])
+        fetch_report = "{0}/{1} minions completed fetch"
+        fetch_report = fetch_report.format(fetch_len, min_len)
+        checkout_report = "{0}/{1} minions completed checkout"
+        checkout_report = checkout_report.format(checkout_len, min_len)
+        if report_type == 'fetch':
+            msgs = fetch_report
+        elif report_type == 'checkout':
+            msgs = checkout_report
+        else:
+            msgs = '{0}; {1}'.format(fetch_report, checkout_report)
+        LOG.info("")
+        LOG.info(msgs)
         if detailed:
+            LOG.info("")
+            LOG.info("Details:")
+            LOG.info("")
             msg = ("{0} status: {1} [started: {2} mins ago,"
                    " last-return: {3} mins ago]")
-            for minion in minions():
+            for minion in minions:
                 try:
                     data = _fetch_info['pending'][minion]
                 except KeyError:
@@ -319,43 +337,30 @@ class ReportDriver(driver.ServiceDriver):
                                           data['checkout_checkin_mins'],
                                           data['checkout_mins'])
                 if report_type == 'fetch':
-                    msgs = fetch_msg
+                    msgs = '\n\t{}'.format(fetch_msg)
                 elif report_type == 'checkout':
-                    msgs = checkout_msg
+                    msgs = '\n\t{}'.format(checkout_msg)
                 else:
-                    msgs = '{0}; {1}'.format(fetch_msg, checkout_msg)
-                msg = "{0}: {1}".format(minion, msgs)
+                    msgs = '\n\t{0}\n\t{1}'.format(fetch_msg, checkout_msg)
+                msgs = "{0}: {1}".format(minion, msgs)
                 LOG.info(msgs)
-        LOG.info("")
-        min_len = len(minions)
-        fetch_len = len(_fetch_info['pending'])
-        checkout_len = len(_checkout_info['pending'])
-        fetch_report = "{0}/{1} minions completed fetch"
-        fetch_report = fetch_report.format(fetch_len, min_len)
-        checkout_report = "{0}/{1} minions completed checkout"
-        checkout_report = checkout_report.format(checkout_len, min_len)
-        if report_type == 'fetch':
-            msgs = fetch_report
-        elif report_type == 'checkout':
-            msgs = checkout_report
-        else:
-            msgs = '{0}; {1}'.format(fetch_report, checkout_report)
-        LOG.info(msgs)
 
     def _get_fetch_info(self, serv, repo_name, minions, tag):
         ret = {'complete': {}, 'pending': {}}
-        for minion in minions():
+        for minion in minions:
             data = self._get_minion_data(serv, repo_name, minion)
             if data['fetch_tag'] == tag:
-                ret['complete'].append(data)
+                ret['complete'][minion] = data
             else:
-                ret['pending'].append(data)
+                ret['pending'][minion] = data
+        return ret
 
     def _get_checkout_info(self, serv, repo_name, minions, tag):
         ret = {'complete': {}, 'pending': {}}
-        for minion in minions():
+        for minion in minions:
             data = self._get_minion_data(serv, repo_name, minion)
             if data['tag'] == tag:
                 ret['complete'][minion] = data
             else:
                 ret['pending'][minion] = data
+        return ret

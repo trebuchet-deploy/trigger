@@ -221,6 +221,7 @@ class Trigger(object):
                help='Service action to take: sync|service')
     @utils.arg('--detailed',
                dest='detailed',
+               action='store_true',
                default=False,
                help='Show report for all minions rather than a summary')
     def do_report(self, args):
@@ -228,7 +229,15 @@ class Trigger(object):
         Report information about this repository's deployments.
         """
         try:
-            self._report_driver.report(args)
+            deploy_info = self._sync_driver.get_deploy_info()
+            tag = deploy_info['tag']
+        except (SyncDriverError, KeyError):
+            LOG.error(e.message)
+            raise TriggerError('Failed to read deployment file. Has an initial'
+                               ' deploment occurred?.', 211)
+        try:
+            if args.action == 'sync':
+                self._report_driver.report_sync(tag, detailed=args.detailed)
         except ReportDriverError as e:
             LOG.error(e.message)
             raise TriggerError('The reporter failed.', 210)

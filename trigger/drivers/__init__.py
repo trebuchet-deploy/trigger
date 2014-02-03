@@ -78,3 +78,18 @@ class ServiceDriver(Driver):
 
     def reload(self, args):
         raise NotImplementedError
+
+
+class ReportDriverError(Exception):
+    def __init__(self, message, errorno):
+        Exception.__init__(self, message)
+        self.errorno = errorno
+
+    def __str__(self):
+        return self.message
+
+
+class ReportDriver(Driver):
+
+    def report(self, args):
+        raise NotImplementedError
