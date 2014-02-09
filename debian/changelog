@@ -1,3 +1,9 @@
+trebuchet-trigger (0.5.1-1) precise; urgency=low
+
+  * Add a reporting driver with a default trebuchet.local driver
+
+ -- Ryan Lane <ryan@ryandlane.com>  Sun, 09 Feb 2014 05:41:42 +0000
+
 trebuchet-trigger (0.4.3-1) precise; urgency=low
 
   * Fix more importing issues
