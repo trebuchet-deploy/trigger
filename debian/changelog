@@ -1,3 +1,9 @@
+trebuchet-trigger (0.4.2-1) precise; urgency=low
+
+  * Fix various importing issues
+
+ -- Ryan Lane <ryan@ryandlane.com>  Sun, 09 Feb 2014 05:00:43 +0000
+
 trebuchet-trigger (0.4.1-1) precise; urgency=low
 
   * Add a utility to update server info in submodules for trebuchet.local

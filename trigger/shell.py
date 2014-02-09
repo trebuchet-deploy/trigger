@@ -25,9 +25,9 @@ import argparse
 from trigger import utils
 from trigger import config
 from trigger import extension
-from driver import LockDriverError
-from driver import SyncDriverError
-from driver import ServiceDriverError
+from trigger.drivers import LockDriverError
+from trigger.drivers import SyncDriverError
+from trigger.drivers import ServiceDriverError
 from trigger.config import ConfigurationError
 from datetime import datetime
 from git import GitCommandError

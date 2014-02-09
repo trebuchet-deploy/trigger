@@ -15,17 +15,17 @@ import os
 import json
 import subprocess
 import trigger.config as config
-import trigger.driver as driver
 
 from datetime import datetime
-from driver import SyncDriverError
-from driver import LockDriverError
-from driver import ServiceDriverError
+from trigger import drivers
+from drivers import SyncDriverError
+from drivers import LockDriverError
+from drivers import ServiceDriverError
 
 LOG = config.LOG
 
 
-class SyncDriver(driver.SyncDriver):
+class SyncDriver(drivers.SyncDriver):
 
     def __init__(self, conf):
         self.conf = conf
@@ -147,7 +147,7 @@ class SyncDriver(driver.SyncDriver):
             raise SyncDriverError(msg, 3)
 
 
-class LockDriver(driver.LockDriver):
+class LockDriver(drivers.LockDriver):
 
     def __init__(self, conf):
         self.conf = conf
@@ -196,7 +196,7 @@ class LockDriver(driver.LockDriver):
             return {'user': None, 'time': None}
 
 
-class ServiceDriver(driver.ServiceDriver):
+class ServiceDriver(drivers.ServiceDriver):
 
     def __init__(self, conf):
         self.conf = conf
