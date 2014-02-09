@@ -9,7 +9,7 @@ def main():
         f.close()
     except (IOError, OSError):
         raise SystemExit(1)
-    subgitdir = subgitdir.replace('gitdir: ', '')
+    subgitdir = subgitdir.replace('gitdir: ', '').strip()
     cmd = 'git update-server-info'
     p = subprocess.Popen(cmd, shell=True, cwd=subgitdir)
     p.communicate()
