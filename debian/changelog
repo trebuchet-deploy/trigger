@@ -1,3 +1,9 @@
+trebuchet-trigger (0.4.3-1) precise; urgency=low
+
+  * Fix more importing issues
+
+ -- Ryan Lane <ryan@ryandlane.com>  Sun, 09 Feb 2014 05:15:00 +0000
+
 trebuchet-trigger (0.4.2-1) precise; urgency=low
 
   * Fix various importing issues

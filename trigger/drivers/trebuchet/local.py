@@ -15,12 +15,12 @@ import os
 import json
 import subprocess
 import trigger.config as config
+import trigger.drivers as drivers
 
 from datetime import datetime
-from trigger import drivers
-from drivers import SyncDriverError
-from drivers import LockDriverError
-from drivers import ServiceDriverError
+from trigger.drivers import SyncDriverError
+from trigger.drivers import LockDriverError
+from trigger.drivers import ServiceDriverError
 
 LOG = config.LOG
 
