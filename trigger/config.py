@@ -54,11 +54,21 @@ class Configuration(object):
             msg = 'Not in a git repository'
             raise ConfigurationError(msg, 1)
         self._load_config()
-        self._missing_config = {}
+        self._missing_config = []
         config = {
-            'repo-name': ('deploy', 'repo-name', None),
-            'user.name': ('user', 'name', None),
-            'user.email': ('user', 'email', None),
+            'deploy.repo-name': {
+                'required': True,
+            },
+            'user.name': {
+                'section': 'user',
+                'name': 'name',
+                'required': True,
+            },
+            'user.email': {
+                'section': 'user',
+                'name': 'email',
+                'required': True,
+            },
         }
         self._register_config(config)
         self.register_drivers()
@@ -82,27 +92,36 @@ class Configuration(object):
 
     def register_drivers(self):
         driver_config = {
-            'sync-driver': ('deploy', 'sync-driver',
-                            'trebuchet.local.SyncDriver'),
-            'lock-driver': ('deploy', 'lock-driver',
-                            'trebuchet.local.LockDriver'),
-            'service-driver': ('deploy', 'service-driver',
-                               'trebuchet.local.ServiceDriver'),
-            'report-driver': ('deploy', 'report-driver',
-                              'trebuchet.local.ReportDriver'),
+            'deploy.sync-driver': {
+                'required': True,
+                'default': 'trebuchet.local.SyncDriver'
+            },
+            'deploy.lock-driver': {
+                'required': True,
+                'default': 'trebuchet.local.LockDriver'
+            },
+            'deploy.service-driver': {
+                'required': True,
+                'default': 'trebuchet.local.ServiceDriver'
+            },
+            'deploy.report-driver': {
+                'required': True,
+                'default': 'trebuchet.local.ReportDriver'
+            },
         }
         self._register_config(driver_config)
         for driver in driver_config:
-            LOG.debug('Getting config for driver: {}'.format(driver))
             driver_config = self.config[driver]
+            driver_name = driver.split('.')[1]
+            LOG.debug('Getting config for driver: {}'.format(driver_name))
             mod, _, cls = driver_config.rpartition('.')
             mod = 'trigger.drivers.' + mod
             try:
                 LOG.debug('Importing {}'.format(mod))
                 __import__(mod)
                 driver_class = getattr(sys.modules[mod], cls)
-                self.drivers[driver] = driver_class(self)
-                self._register_config(self.drivers[driver].get_config())
+                self.drivers[driver_name] = driver_class(self)
+                self._register_config(self.drivers[driver_name].get_config())
             except (ValueError, AttributeError):
                 msg = 'Failed to import driver: {0}'.format(mod)
                 raise ConfigurationError(msg, 1)
@@ -110,28 +129,28 @@ class Configuration(object):
     def _register_config(self, config):
         for level in self._config_levels:
             repo_config = self._repo_config[level]
-            for key, val in config.items():
+            for key, item in config.items():
                 try:
+                    section, name = key.split('.')
                     if level == 'trigger':
-                        _key = '{0}.{1}'.format(val[0], val[1])
-                        self.config[key] = repo_config[_key]
+                        self.config[key] = repo_config[key]
                     else:
-                        self.config[key] = repo_config.get_value(val[0],
-                                                                 val[1])
+                        self.config[key] = repo_config.get_value(section,
+                                                                 name)
                 except (KeyError,
                         ConfigParser.NoOptionError,
                         ConfigParser.NoSectionError):
-                    if val[2] is not None:
-                        self.config[key] = val[2]
-        for key, val in config.items():
-            if key not in self.config:
-                self._missing_config[key] = val
+                    if 'default' in item:
+                        self.config[key] = item['default']
+        for key, item in config.items():
+            if item['required'] and key not in self.config:
+                self._missing_config.append(key)
 
     def _check_config(self):
         if self._missing_config:
-            for key, val in self._missing_config.items():
+            for item in self._missing_config:
                 msg = ('Missing the following configuration item:'
-                       ' {0}.{1}').format(val[0], val[1])
+                       ' {0}').format(item)
                 LOG.error(msg)
             raise ConfigurationError('Please add the missing configuration'
                                      ' items via git config or in the'
