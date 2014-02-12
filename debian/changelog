@@ -1,3 +1,9 @@
+trebuchet-trigger (0.5.2-1) precise; urgency=low
+
+  * Fix a drivers reference error
+
+ -- Ryan Lane <ryan@ryandlane.com>  Wed, 12 Feb 2014 08:42:58 +0000
+
 trebuchet-trigger (0.5.1-1) precise; urgency=low
 
   * Add a reporting driver with a default trebuchet.local driver

@@ -66,7 +66,7 @@ class Trigger(object):
                            ' repo by {0}.').format(lock_info['user'])
             else:
                 message = ('A deployment has already been started for this'
-                           'repo.')
+                           ' repo.')
             raise TriggerError(message, 100)
         try:
             self._lock_driver.add_lock(args)

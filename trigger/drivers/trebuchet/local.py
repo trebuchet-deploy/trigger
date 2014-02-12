@@ -238,7 +238,7 @@ class ServiceDriver(drivers.ServiceDriver):
                 LOG.error('{}'.format(i))
 
 
-class ReportDriver(driver.ReportDriver):
+class ReportDriver(drivers.ReportDriver):
 
     def __init__(self, conf):
         self.conf = conf
