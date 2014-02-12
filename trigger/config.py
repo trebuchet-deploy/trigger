@@ -60,13 +60,9 @@ class Configuration(object):
                 'required': True,
             },
             'user.name': {
-                'section': 'user',
-                'name': 'name',
                 'required': True,
             },
             'user.email': {
-                'section': 'user',
-                'name': 'email',
                 'required': True,
             },
         }
