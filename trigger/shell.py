@@ -177,7 +177,8 @@ class Trigger(object):
         #TODO: use a tag driver
         timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
         try:
-            tag_format = '{0}-{1}-{2}'.format(self.conf.config['repo-name'],
+            repo_name = self.conf.config['deploy.repo-name']
+            tag_format = '{0}-{1}-{2}'.format(repo_name,
                                               tag_type,
                                               timestamp)
             return self.conf.repo.create_tag(tag_format)

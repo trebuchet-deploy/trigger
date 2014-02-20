@@ -39,7 +39,10 @@ class SyncDriver(drivers.SyncDriver):
 
     def get_config(self):
         return {
-            'checkout-submodules': ('deploy', 'checkout-submodules', False)
+            'deploy.checkout-submodules': {
+                'required': False,
+                'default': False
+            }
         }
 
     def _write_deploy_file(self, tag):
@@ -65,7 +68,7 @@ class SyncDriver(drivers.SyncDriver):
                              stderr=subprocess.PIPE)
         p.communicate()
         # Also update server info for all submodules
-        if self.conf.config['checkout-submodules']:
+        if self.conf.config['deploy.checkout-submodules']:
             # The same tag used in the parent needs to exist in the submodule
             cmd = 'git submodule foreach --recursive "git tag {0}"'
             cmd = cmd.format(tag.name)
@@ -84,7 +87,7 @@ class SyncDriver(drivers.SyncDriver):
 
     def _fetch(self, args):
         # TODO (ryan-lane): Check return values from these commands
-        repo_name = self.conf.config['repo-name']
+        repo_name = self.conf.config['deploy.repo-name']
         cmd = "sudo salt-call -l quiet publish.runner deploy.fetch '{0}'"
         cmd = cmd.format(repo_name)
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
@@ -92,7 +95,7 @@ class SyncDriver(drivers.SyncDriver):
 
     def _checkout(self, args):
         # TODO (ryan-lane): Check return values from these commands
-        repo_name = self.conf.config['repo-name']
+        repo_name = self.conf.config['deploy.repo-name']
         cmd = ("sudo salt-call -l quiet publish.runner"
                " deploy.checkout '{0},{1}'")
         cmd = cmd.format(repo_name, args.force)
@@ -205,7 +208,7 @@ class ServiceDriver(drivers.ServiceDriver):
         self.conf = conf
 
     def restart(self, args):
-        repo = self.conf.config['repo-name']
+        repo = self.conf.config['deploy.repo-name']
         cmd = ("sudo salt-call -l quiet --out=json publish.runner "
                "deploy.restart '{0}','{1}'")
         p = subprocess.Popen(cmd.format(repo, args.batch),
@@ -288,7 +291,7 @@ class ReportDriver(drivers.ReportDriver):
 
     def report_sync(self, tag, report_type='full', detailed=False):
         serv = self._get_redis_serv()
-        repo_name = self.conf.config['repo-name']
+        repo_name = self.conf.config['deploy.repo-name']
         LOG.info('Repo: {}'.format(repo_name))
         LOG.info('Tag: {}'.format(tag))
         minions = serv.smembers('deploy:{0}:minions'.format(repo_name))
