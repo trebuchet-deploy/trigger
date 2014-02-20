@@ -68,7 +68,6 @@ class Configuration(object):
         }
         self._register_config(config)
         self.register_drivers()
-        self._check_config()
 
     def _load_config(self):
         self._repo_config = {}
@@ -142,7 +141,7 @@ class Configuration(object):
             if item['required'] and key not in self.config:
                 self._missing_config.append(key)
 
-    def _check_config(self):
+    def check_config(self):
         if self._missing_config:
             for item in self._missing_config:
                 msg = ('Missing the following configuration item:'

@@ -232,10 +232,14 @@ class Trigger(object):
         try:
             deploy_info = self._sync_driver.get_deploy_info()
             tag = deploy_info['tag']
-        except (SyncDriverError, KeyError):
+        except SyncDriverError as e:
             LOG.error(e.message)
             raise TriggerError('Failed to read deployment file. Has an initial'
                                ' deploment occurred?.', 211)
+        except KeyError:
+            LOG.error(e.message)
+            raise TriggerError('Tag not in deployment file. Has an initial'
+                               ' deploment occurred?.', 212)
         try:
             if args.action == 'sync':
                 self._report_driver.report_sync(tag, detailed=args.detailed)
@@ -333,12 +337,19 @@ class Trigger(object):
         self.command_name = name[4:]
         self.extensions = self._discover_extensions()
         self.parser = self._get_subcommand_parser()
+        if len(argv) == 0:
+            self.parser.print_help()
+            raise SystemExit(2)
         args = self.parser.parse_args(argv)
-
+        if args.func == self.do_help:
+            self.do_help(args)
+            raise SystemExit(0)
         try:
-            if args.func == self.do_help:
-                self.do_help(args)
-                return 0
+            self.conf.check_config()
+        except ConfigurationError as e:
+            LOG.error(e.message)
+            raise SystemExit(e.errorno)
+        try:
             args.func(args)
         except TriggerError as e:
             LOG.error(e.message)
@@ -346,11 +357,7 @@ class Trigger(object):
 
 
 def main():
-    try:
-        conf = config.Configuration()
-    except ConfigurationError as e:
-        LOG.error(e.message)
-        raise SystemExit(e.errorno)
+    conf = config.Configuration()
     trigger = Trigger(conf)
     trigger.main(sys.argv[0], sys.argv[1:])
 
