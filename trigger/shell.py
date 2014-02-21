@@ -183,8 +183,16 @@ class Trigger(object):
                                               timestamp)
             return self.conf.repo.create_tag(tag_format)
         except GitCommandError:
-            message = 'Failed to write the {0} tag.'.format(tag_type)
-            raise TriggerError(message, 190)
+            if tag_type == 'start':
+                try:
+                    self.conf.repo.head.object
+                except ValueError:
+                    msg = ('There is no initial commit, so no start tag can be'
+                           ' written. Please add at least one commit before'
+                           ' attempting to start a deployment.')
+                    raise TriggerError(msg, 191)
+            msg = 'Failed to write the {0} tag.'.format(tag_type)
+            raise TriggerError(msg, 190)
 
     def _get_latest_tag(self, tag_type):
         tag_filter = '-{0}-'.format(tag_type)
@@ -349,6 +357,25 @@ class Trigger(object):
         except ConfigurationError as e:
             LOG.error(e.message)
             raise SystemExit(e.errorno)
+        umask = self.conf.config['deploy.required-umask']
+        if umask:
+            # When the config is set, it'll be in octal, but users may or may
+            # not set it as a string. If it isn't a string, GitPython will read
+            # it in as an int, so we need to convert that properly to a string,
+            # then to int by treating the string as octal.
+            if isinstance(umask, str):
+                _umask = int(umask, 8)
+            else:
+                _umask = int(str(umask), 8)
+            # os.umask annoyingly is the only way to get the current umask and
+            # it sets the umask. Get the umask and return it to the original.
+            current_umask = os.umask(_umask)
+            os.umask(current_umask)
+            if current_umask != _umask:
+                msg = ('Required umask is {0:03d}. Please set your umask and'
+                       ' try again.')
+                LOG.error(msg.format(umask))
+                raise SystemExit(220)
         try:
             args.func(args)
         except TriggerError as e:

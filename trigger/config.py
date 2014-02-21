@@ -59,6 +59,10 @@ class Configuration(object):
             'deploy.repo-name': {
                 'required': True,
             },
+            'deploy.required-umask': {
+                'required': False,
+                'default': None,
+            },
             'user.name': {
                 'required': True,
             },
