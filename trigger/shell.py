@@ -384,7 +384,11 @@ class Trigger(object):
 
 
 def main():
-    conf = config.Configuration()
+    try:
+        conf = config.Configuration()
+    except ConfigurationError as e:
+        LOG.error(e.message)
+        raise SystemExit(e.errorno)
     trigger = Trigger(conf)
     trigger.main(sys.argv[0], sys.argv[1:])
 
