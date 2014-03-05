@@ -1,3 +1,9 @@
+trebuchet-trigger (0.5.4-1) precise; urgency=low
+
+  * Catch exception for config when not in repo
+
+ -- Ryan Lane <ryan@ryandlane.com>  Wed Mar 5 04:06:11 +0000
+
 trebuchet-trigger (0.5.3-1) precise; urgency=low
 
   * Refactor config to fulle use hashes and explicit keys
