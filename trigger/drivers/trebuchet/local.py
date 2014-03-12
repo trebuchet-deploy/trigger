@@ -76,8 +76,6 @@ class SyncDriver(drivers.SyncDriver):
                                  shell=True, stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
             p.communicate()
-            # TODO (ryan-lane): Find a way to do this without a separate
-            #                   bash script.
             p = subprocess.Popen('git submodule foreach --recursive '
                                  '"trigger-submodule-update"',
                                  cwd=self.conf.repo.working_dir, shell=True,
