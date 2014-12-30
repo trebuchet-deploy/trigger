@@ -63,22 +63,22 @@ class SyncDriver(drivers.SyncDriver):
     def _update_server_info(self, tag):
         # TODO (ryan-lane): Use GitPython for this function if possible
         # TODO (ryan-lane): Check return values from these commands
-        p = subprocess.Popen('git update-server-info',
-                             cwd=self._deploy_dir, shell=True,
+        p = subprocess.Popen(['git','update-server-info'],
+                             cwd=self._deploy_dir,
                              stderr=subprocess.PIPE)
         p.communicate()
         # Also update server info for all submodules
         if self.conf.config['deploy.checkout-submodules']:
             # The same tag used in the parent needs to exist in the submodule
-            cmd = 'git submodule foreach --recursive "git tag {0}"'
-            cmd = cmd.format(tag.name)
-            p = subprocess.Popen(cmd, cwd=self.conf.repo.working_dir,
-                                 shell=True, stdout=subprocess.PIPE,
+            p = subprocess.Popen(['git','submodule','foreach','--recursive',
+                                  'git','tag',tag.name],
+                                 cwd=self.conf.repo.working_dir,
+                                 stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
             p.communicate()
-            p = subprocess.Popen('git submodule foreach --recursive '
-                                 '"trigger-submodule-update"',
-                                 cwd=self.conf.repo.working_dir, shell=True,
+            p = subprocess.Popen(['git','submodule','foreach','--recursive',
+                                  'trigger-submodule-update'],
+                                 cwd=self.conf.repo.working_dir,
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
             p.communicate()
@@ -86,18 +86,17 @@ class SyncDriver(drivers.SyncDriver):
     def _fetch(self, args):
         # TODO (ryan-lane): Check return values from these commands
         repo_name = self.conf.config['deploy.repo-name']
-        cmd = "sudo salt-call -l quiet publish.runner deploy.fetch '{0}'"
-        cmd = cmd.format(repo_name)
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+        p = subprocess.Popen(['sudo','salt-call','-l','quiet','publish.runner',
+                              'deploy.fetch', repo_name],
+                             stdout=subprocess.PIPE)
         p.communicate()
 
     def _checkout(self, args):
         # TODO (ryan-lane): Check return values from these commands
         repo_name = self.conf.config['deploy.repo-name']
-        cmd = ("sudo salt-call -l quiet publish.runner"
-               " deploy.checkout '{0},{1}'")
-        cmd = cmd.format(repo_name, args.force)
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+        p = subprocess.Popen(['sudo','salt-call','-l','quiet','publish.runner',
+                              'deploy.checkout', repo_name+','+str(args.force)],
+                             stdout=subprocess.PIPE)
         p.communicate()
 
     def _ask(self, stage, args, tag):
@@ -206,11 +205,10 @@ class ServiceDriver(drivers.ServiceDriver):
         self.conf = conf
 
     def restart(self, args):
-        repo = self.conf.config['deploy.repo-name']
-        cmd = ("sudo salt-call -l quiet --out=json publish.runner "
-               "deploy.restart '{0}','{1}'")
-        p = subprocess.Popen(cmd.format(repo, args.batch),
-                             shell=True,
+        repo_name = self.conf.config['deploy.repo-name']
+        p = subprocess.Popen(['sudo','salt-call','-l','quiet','--out=json',
+                              'publish.runner','deploy.restart',
+                              repo_name+','+str(args.batch)],
                              stdout=subprocess.PIPE)
         out = p.communicate()[0]
         ## Disabled until salt bug is fixed:

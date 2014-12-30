@@ -10,8 +10,7 @@ def main():
     except (IOError, OSError):
         raise SystemExit(1)
     subgitdir = subgitdir.replace('gitdir: ', '').strip()
-    cmd = 'git update-server-info'
-    p = subprocess.Popen(cmd, shell=True, cwd=subgitdir)
+    p = subprocess.Popen(['git','update-server-info'], cwd=subgitdir)
     p.communicate()
 
 
